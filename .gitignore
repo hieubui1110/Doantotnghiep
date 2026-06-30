@@ -1,0 +1,41 @@
+# Python / Backend
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Node / Frontend (trong thư mục scripts hoặc frontend nếu có)
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.eslintcache
+
+# Bảo mật cấu hình (Rất quan trọng!)
+.env
+.env.local
+.env.*.local
+**/backend/.env
+
+# Cơ sở dữ liệu và file nặng
+*.db
+*.sqlite
+backend/static/evidence/*
+!backend/static/evidence/.gitkeep
+backend/yolo_models/*.pt
+backend/yolo_models/*.onnx
+
+# IDEs cấu hình cá nhân
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
