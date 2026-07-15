@@ -23,7 +23,12 @@ async def get_operators(db: AsyncSession, skip: int = 0, limit: int = 100) -> Li
     result = await db.execute(select(Operator).offset(skip).limit(limit))
     return list(result.scalars().all())
 
-async def create_operator(db: AsyncSession, obj_in: RegisterRequest, role: str = "operator") -> Operator:
+async def create_operator(
+    db: AsyncSession,
+    obj_in: RegisterRequest,
+    role: str = "operator",
+    is_email_verified: bool = False
+) -> Operator:
     hashed_password = get_password_hash(obj_in.password)
     db_obj = Operator(
         username=obj_in.username,
@@ -31,7 +36,8 @@ async def create_operator(db: AsyncSession, obj_in: RegisterRequest, role: str =
         hashed_password=hashed_password,
         full_name=obj_in.full_name,
         role=role,
-        is_active=True
+        is_active=True,
+        is_email_verified=is_email_verified
     )
     db.add(db_obj)
     await db.flush()  # Populates DB fields like ID without committing transaction

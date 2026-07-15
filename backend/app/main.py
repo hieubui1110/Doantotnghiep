@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.core.database import engine, Base, AsyncSessionLocal
+from app.models import base
 from app.api.v1.router import api_router
 from app.core.security import get_password_hash
 from app.models.operator import Operator
@@ -35,12 +36,18 @@ async def lifespan(app: FastAPI):
                     hashed_password=hashed_pw,
                     full_name="System Administrator",
                     role="admin",
-                    is_active=True
+                    is_active=True,
+                    is_email_verified=True
                 )
                 session.add(admin)
                 await session.commit()
                 print("[+] Default admin user seeded successfully (username: 'admin', password: 'admin123').")
             else:
+                if not admin_user.is_email_verified:
+                    admin_user.is_email_verified = True
+                    admin_user.email_verified_at = admin_user.email_verified_at
+                    session.add(admin_user)
+                    await session.commit()
                 print("[+] Admin user already exists. Skipping seed.")
         except Exception as e:
             print(f"[-] Error seeding database: {e}")

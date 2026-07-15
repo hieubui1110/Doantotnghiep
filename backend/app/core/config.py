@@ -38,6 +38,15 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    EMAIL_VERIFICATION_EXPIRE_HOURS: int = 24
+
+    # Email delivery. When SMTP_HOST is not configured, verification links are logged for local demos.
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = "no-reply@traffic.local"
+    SMTP_USE_TLS: bool = True
 
     # YOLO settings
     YOLO_MODEL_PATH: str = "yolo_models/best.pt"

@@ -14,5 +14,7 @@ class Operator(Base):
     full_name = Column(String(255), nullable=True)
     role = Column(String(20), nullable=False, default="operator")  # 'admin' or 'operator'
     is_active = Column(Boolean, nullable=False, default=True)
+    is_email_verified = Column(Boolean, nullable=False, default=False)
+    email_verified_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), nullable=True, onupdate=lambda: datetime.now(timezone.utc))

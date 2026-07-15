@@ -7,3 +7,4 @@ from app.models.detection import Detection
 from app.models.violation import Violation
 from app.models.traffic_stats import TrafficStat
 from app.models.refresh_token import RefreshToken
+from app.models.email_verification_token import EmailVerificationToken

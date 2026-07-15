@@ -1,24 +1,27 @@
 import uuid
 from typing import Optional
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
-from jose import jwt, JWTError
 
-from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import decode_token
 from app.crud.crud_operator import get_operator
 from app.models.operator import Operator
 
-# Scheme for parsing authorization header (can read from anywhere, but default header)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
+# Swagger/OpenAPI security scheme for JWT Bearer tokens.
+bearer_scheme = HTTPBearer(
+    scheme_name="JWT Bearer",
+    bearerFormat="JWT",
+    auto_error=False
+)
 
 async def get_current_operator(
-    token: Optional[str] = Depends(oauth2_scheme),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
     db: AsyncSession = Depends(get_db)
 ) -> Operator:
     """Dependency to retrieve the currently authenticated operator."""
+    token = credentials.credentials if credentials else None
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

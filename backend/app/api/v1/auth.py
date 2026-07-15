@@ -1,6 +1,6 @@
 import uuid
 import hashlib
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -18,9 +18,15 @@ from app.crud.crud_operator import (
     create_operator,
     update_operator_password
 )
+from app.crud.crud_email_verification import (
+    create_email_verification_token,
+    get_valid_email_verification_token,
+    revoke_active_email_verification_tokens
+)
 from app.dependencies.auth import get_current_operator
 from app.models.operator import Operator
 from app.models.refresh_token import RefreshToken
+from app.services.email_service import send_verification_email
 from app.schemas.auth import (
     LoginRequest,
     RegisterRequest,
@@ -28,6 +34,8 @@ from app.schemas.auth import (
     AuthResponse,
     ChangePasswordRequest,
     TokenRefreshRequest,
+    VerifyEmailRequest,
+    ResendVerificationEmailRequest,
     MessageResponse
 )
 
@@ -58,6 +66,12 @@ async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
             detail="Tài khoản đã bị vô hiệu hóa."
         )
         
+    if not operator.is_email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tai khoan chua xac thuc email. Vui long kiem tra email de xac thuc tai khoan."
+        )
+
     # 4. Create tokens
     access_token = create_access_token(operator.id)
     refresh_token = create_refresh_token(operator.id)
@@ -99,10 +113,53 @@ async def register(reg_data: RegisterRequest, db: AsyncSession = Depends(get_db)
             detail="Email đã được sử dụng."
         )
         
-    operator = await create_operator(db, reg_data)
+    operator = await create_operator(db, reg_data, is_email_verified=False)
+    _, verification_token = await create_email_verification_token(db, operator.id)
     await db.commit()
     await db.refresh(operator)
+    send_verification_email(operator, verification_token)
     return operator
+
+@router.post("/verify-email", response_model=MessageResponse)
+async def verify_email(verify_data: VerifyEmailRequest, db: AsyncSession = Depends(get_db)):
+    db_token = await get_valid_email_verification_token(db, verify_data.token)
+    if not db_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token xac thuc email khong hop le hoac da het han."
+        )
+
+    operator = await db.get(Operator, db_token.operator_id)
+    if not operator:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Khong tim thay tai khoan can xac thuc."
+        )
+
+    now = datetime.now(timezone.utc)
+    operator.is_email_verified = True
+    operator.email_verified_at = now
+    db_token.used_at = now
+    db.add(operator)
+    db.add(db_token)
+    await db.commit()
+    return {"message": "Xac thuc email thanh cong."}
+
+@router.post("/resend-verification", response_model=MessageResponse)
+async def resend_verification_email(
+    resend_data: ResendVerificationEmailRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    operator = await get_operator_by_email(db, str(resend_data.email))
+    generic_message = "Neu email ton tai va chua duoc xac thuc, he thong se gui lai email xac thuc."
+    if not operator or operator.is_email_verified:
+        return {"message": generic_message}
+
+    await revoke_active_email_verification_tokens(db, operator.id)
+    _, verification_token = await create_email_verification_token(db, operator.id)
+    await db.commit()
+    send_verification_email(operator, verification_token)
+    return {"message": generic_message}
 
 @router.get("/me", response_model=UserProfileDto)
 async def get_me(current_operator: Operator = Depends(get_current_operator)):

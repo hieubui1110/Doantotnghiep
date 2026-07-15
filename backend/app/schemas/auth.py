@@ -17,7 +17,7 @@ class LoginRequest(BaseSchema):
 
 class RegisterRequest(BaseSchema):
     username: str = Field(..., min_length=3, max_length=50)
-    email: str
+    email: EmailStr
     password: str = Field(..., min_length=6)
 
     full_name: Optional[str] = Field(None, validation_alias="fullName")
@@ -26,10 +26,12 @@ class UserProfileDto(BaseSchema):
     id: uuid.UUID
 
     username: str
-    email: str
+    email: EmailStr
     full_name: Optional[str] = None
     role: str
     is_active: bool
+    is_email_verified: bool
+    email_verified_at: Optional[datetime] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -44,6 +46,12 @@ class ChangePasswordRequest(BaseSchema):
 
 class TokenRefreshRequest(BaseSchema):
     refresh_token: str = Field(..., validation_alias="refreshToken")
+
+class VerifyEmailRequest(BaseSchema):
+    token: str
+
+class ResendVerificationEmailRequest(BaseSchema):
+    email: EmailStr
 
 class MessageResponse(BaseSchema):
     message: str
